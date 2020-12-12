@@ -32,7 +32,7 @@ public class SapClient {
     private static  HttpsURLConnection connection; //http connection
 
     //printStream
-    public static void getStream(InputStream input){
+    public void getStream(InputStream input){
         String text = null;
         try (Scanner scanner = new Scanner(input, StandardCharsets.UTF_8.name())) {
             text = scanner.useDelimiter("\\A").next();
@@ -40,7 +40,7 @@ public class SapClient {
         System.out.println(text);
 
     }
-    public static JsonObject printStream(InputStream input){
+    public JsonObject printStream(InputStream input){
         Reader reader = null;
         JsonObject result= null;
         try {
@@ -54,7 +54,7 @@ public class SapClient {
     }
 
     //Trust manager
-    private static TrustManager[] getTrust(){
+    private TrustManager[] getTrust(){
         return new TrustManager[]{
                 new X509TrustManager() {
                     public X509Certificate[] getAcceptedIssuers() {
@@ -70,7 +70,7 @@ public class SapClient {
         };
     }
 
-    private static SSLContext sslContext(){
+    private SSLContext sslContext(){
         SSLContext sc = null;
         try {
             sc = SSLContext.getInstance("SSL");
@@ -81,7 +81,7 @@ public class SapClient {
         return sc;
     }
 
-    public static JsonObject processRequest(String requestMethod, String serviceUrl, String requestBody){
+    public JsonObject processRequest(String requestMethod, String serviceUrl, String requestBody){
         try {
             URL url = new URL(serverUrl+ serviceUrl);
             connection = (HttpsURLConnection) url.openConnection();
@@ -95,7 +95,7 @@ public class SapClient {
                 connection.setRequestProperty("Cookie", SessionCookies);
             } else {
                 // temp
-                String localCookie = "ROUTEID=.node2;B1SESSION=7516714c-3b3e-11eb-8000-00505694e489;";
+                String localCookie = "B1SESSION=1172dfda-3be4-11eb-8000-00505694e489;";
                 connection.setRequestProperty("Cookie", localCookie);
             }
 
@@ -112,21 +112,21 @@ public class SapClient {
             connection.getHeaderFields().forEach((key, value) -> System.out.println(key + " : "+value));
 
             if(connection.getResponseCode() == 200){
-                getStream(connection.getInputStream());
-                //return printStream(connection.getInputStream());
+                //getStream(connection.getInputStream());
+                return printStream(connection.getInputStream());
             } else {
-                getStream(connection.getErrorStream());
-               //return printStream(connection.getErrorStream());
+                //getStream(connection.getErrorStream());
+                return printStream(connection.getErrorStream());
             }
 
         } catch (IOException e) {
-            e.printStackTrace();
+            System.out.println(e.getMessage());
         }
         return null;
     }
 
     //login function
-    public static void login(){
+    public void login(){
         // service url
         String serviceUrl = "Login";
         // credentials
@@ -135,7 +135,7 @@ public class SapClient {
         credentials.appendField("UserName", UserName);
         credentials.appendField("Password", Password);
         // processLogin
-        String result = Objects.requireNonNull(processRequest("POST", "Login", credentials.toString())).toString();
+        JsonObject result = processRequest("POST", "Login", credentials.toString());
         System.out.println(result);
         // get the cookies
         StringBuilder cookies = new StringBuilder();
@@ -150,7 +150,9 @@ public class SapClient {
     }
 
     public static String quantity(String part){
-        String serviceUrl = "Items?$select=ItemCode,ItemName,QuantityOnStock&$filter=startswith(ItemCode,%27" + part+ "%27)";
+        //StringBuilder select = null;
+        String select = "he";
+        String serviceUrl = "Items?$select="+ select+ "&$filter=startswith(ItemCode,%27" + part+ "%27)";
         String serviceUrl3 = "Items?$select=QuantityOnStock&$filter=startswith(ItemCode,%27" + part+ "%27)";
         String serviceUrl2 = "Items?$filter=startswith(ItemCode,%27" + part+ "%27)";
          JsonArray quantity = (JsonArray) Objects.requireNonNull(processRequest("GET", serviceUrl3, null)).get("value");
@@ -159,10 +161,12 @@ public class SapClient {
     }
 
     public static void invoices(String invoice){
-        String serviceUrl = "Invoices?$filter=startswith(DocNum,%27138250%27)";
+
+        String serviceUrl = "Invoices?$filter=startswith(DocNum,%27" + invoice+ "%27)";
         processRequest("GET", serviceUrl, null);
-        System.out.println(connection.getURL());
+        //System.out.println(connection.getURL());
     }
+
 
     public static void main(String[] arg){
        //login();
